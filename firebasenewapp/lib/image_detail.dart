@@ -61,7 +61,6 @@ class _DetailScreenState extends State<DetailScreen> {
   void _faceDetection() async{
     int startTime = new DateTime.now().millisecondsSinceEpoch;    
     
-    // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
     img.Image imageResized = img.copyResize(imgImage, width: 500, interpolation: img.Interpolation.cubic);
 
     File(resizedPath).writeAsBytesSync(img.encodePng(imageResized));
@@ -134,7 +133,7 @@ class _DetailScreenState extends State<DetailScreen> {
       matchEx1 = RegExp(match1);
       matchEx2 = RegExp(match2);
       matchEx3 = RegExp(match3);
-      
+
       textCapture = "";
       linecount = 0;      
       double sumDY = 0;

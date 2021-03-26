@@ -111,16 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await Directory(visionDir).create(recursive: true);
 
     final imageRPath = '$visionDir/imageResized_$formattedDateTime.jpg';
-    //String imagePath = "";
-    /*
-    try {
-      var image = await _picker.getImage(source: (isCamera == true) ? ImageSource.camera : ImageSource.gallery);         
-      imagePath = image.path;
-    } on Exception catch (e) {
-      print("Camera Exception: $e");
-      return [null,null];
-    }
-    */
     var image = await _picker.getImage(source: (isCamera == true) ? ImageSource.camera : ImageSource.gallery);
     setState(() {      
       imageURI = image;

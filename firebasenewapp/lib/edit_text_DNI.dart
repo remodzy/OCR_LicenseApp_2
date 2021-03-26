@@ -1,4 +1,3 @@
-import 'package:firebasenewapp/edit_text_AU.dart';
 import 'package:flutter/material.dart';
 import 'package:firebasenewapp/results.dart';
 import 'dart:io';

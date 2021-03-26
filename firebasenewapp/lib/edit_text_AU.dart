@@ -10,7 +10,7 @@ const String labelNumber = "License number: ";
 const String labelDOB = "DOB: ";
 
 class EditTextAU extends StatefulWidget{
-  
+
   final String editable; 
   final String title;
   final String facePath;
@@ -22,7 +22,6 @@ class EditTextAU extends StatefulWidget{
 
 class _EditTextAU extends State<EditTextAU>{
   _EditTextAU(this._text, this.title, this._facePath);
-  //final String path;
   final String _text;
   final String title;
   final String _facePath;
