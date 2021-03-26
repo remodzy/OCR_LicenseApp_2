@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1056349598823",
+    "project_id": "fir-ocrapp2",
+    "storage_bucket": "fir-ocrapp2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1056349598823:android:bb355e5fc14e34529690c2",
+        "android_client_info": {
+          "package_name": "com.example.firebasenewapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1056349598823-ltcdimtths5gachlj6eg2ft3le04fb1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC32xxCJXqJ6O5up3EDJvgKdplZrN_Z7w8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1056349598823-ltcdimtths5gachlj6eg2ft3le04fb1i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
