@@ -4,28 +4,33 @@ import 'package:firebasenewapp/edit_text_AU.dart';
 import 'package:firebasenewapp/edit_text_DNI.dart';
 import 'package:image/image.dart' as img;
 import 'package:firebasenewapp/results.dart';
+import 'package:tflite/tflite.dart';
 import 'dart:io';
 import 'dart:ui';
 import 'dart:async';
 
+const String ssd = "SSD MobileNet";
+
 class DetailScreen extends StatefulWidget {
   final String imagePath;
   final String imageResizedPath;
+  final String signPath;
   final String title;
   final int select;
   final img.Image imgImage;
 
-  DetailScreen(this.imagePath, this.imageResizedPath,this.imgImage,this.title, this.select);
+  DetailScreen(this.imagePath, this.imageResizedPath, this.signPath, this.imgImage,this.title, this.select);
 
   @override
-  _DetailScreenState createState() => new _DetailScreenState(imagePath, imageResizedPath, imgImage, title, select);
+  _DetailScreenState createState() => new _DetailScreenState(imagePath, imageResizedPath, signPath, imgImage, title, select);
 }
 
 class _DetailScreenState extends State<DetailScreen> {
-  _DetailScreenState(this.path, this.resizedPath,this.imgImage, this.title, this.select);
+  _DetailScreenState(this.path, this.resizedPath, this.signPath,this.imgImage, this.title, this.select);
 
   final String path;
   final String resizedPath;
+  String signPath;
   String imagePath;
   final String title;
   final int select;
@@ -33,8 +38,33 @@ class _DetailScreenState extends State<DetailScreen> {
 
   Size _imageSize;
   List<TextElement> _elements = [];
-  String recognizedText = "Loading ...";  
+  String recognizedText = "Loading...";  
   Rect boundingBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+  
+  List _recognitions;
+
+  ssdMobileNet(File image) async {
+    final recognitions = await Tflite.detectObjectOnImage( 
+        path: image.path, numResultsPerClass: 1, threshold: 0.2, imageMean: 128, imageStd: 128);
+    setState(() {
+      _recognitions = recognitions;
+      //recognizedText = "";
+      //recognizedText += "Signature confidence: "+recognitions[0]['confidenceInClass'].toString()+"\n";
+    }); 
+    print("TFLITE: "+_recognitions.toString());
+
+    if(_recognitions.length>0){
+      final int x = (_recognitions[0]['rect']['x']*_imageSize.width).toInt();
+      final int y = (_recognitions[0]['rect']['y']*_imageSize.height).toInt();
+      final int w = (_recognitions[0]['rect']['w']*_imageSize.width).toInt();
+      final int h = (_recognitions[0]['rect']['h']*_imageSize.height).toInt();
+
+    img.Image signImage = copyCrop(imgImage,x,y,w,h);
+    
+    File(signPath).writeAsBytesSync(img.encodePng(signImage));
+    }
+    else signPath="null";
+  }
 
   img.Image copyCrop(img.Image src, int x, int y, int w, int h) {
   // Make sure crop rectangle is within the range of the src image.
@@ -80,8 +110,6 @@ class _DetailScreenState extends State<DetailScreen> {
       else boundingBox = faces[1].boundingBox;
     }
     else boundingBox = faces[0].boundingBox;
-    print("BoundingBox:");
-    print(boundingBox);
 
     imageResized = copyCrop(imageResized,(boundingBox.topLeft.dx-0.15*boundingBox.width).toInt(),(boundingBox.topLeft.dy-0.2*boundingBox.height).toInt(),(1.3*boundingBox.width).toInt(),(1.4*boundingBox.height).toInt());
     imageResized = img.copyResize(imageResized, width: 150, interpolation: img.Interpolation.cubic);  
@@ -101,6 +129,7 @@ class _DetailScreenState extends State<DetailScreen> {
       await _getImageSize(imageFile);
     }
 
+    ssdMobileNet(imageFile);
     _faceDetection();
 
     FirebaseVisionImage visionImage =
@@ -111,7 +140,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
     final VisionText visionText =
         await textRecognizer.processImage(visionImage);
-
+    print(visionText.text);
     String pattern1,pattern2;    
     String match1,match2,match3,match4,match5,match6;
     
@@ -221,9 +250,15 @@ class _DetailScreenState extends State<DetailScreen> {
     textCapture = "";
 
     linecount = 0;
-    for (TextBlock block in visionText.blocks) {      
+    for (TextBlock block in visionText.blocks) {  
+      print("Block:");   
       for (TextLine line in block.lines) {
         print(line.text);
+      }
+    }
+
+    for (TextBlock block in visionText.blocks) {     
+      for (TextLine line in block.lines) {
         if (matchEx1.hasMatch(line.text)) {
           textCapture += "DNI: "+ line.text.substring(line.text.indexOf(matchEx1)+4,line.text.indexOf(matchEx1)+12) + '\n';
           try{ 
@@ -234,30 +269,46 @@ class _DetailScreenState extends State<DetailScreen> {
           }
           
           for (TextElement element in line.elements) {
-
             _elements.add(element);
           }
         }
 
         if (matchEx2.hasMatch(line.text)) {
-          for (TextElement element in block.lines[linecount+1].elements) {
-            _elements.add(element);
-            textCapture+="Father's last name: "+element.text + '\n';
+          try{
+            for (TextElement element in block.lines[linecount+1].elements) {
+              _elements.add(element);
+              textCapture+="Father's last name: "+element.text + '\n';
+            }
           }
+          catch(e){
+            textCapture+="Father's last name: null\n";
+          }
+          
         }
 
         if (matchEx3.hasMatch(line.text)) {
-          for (TextElement element in block.lines[linecount+1].elements) {
-            _elements.add(element);
-            textCapture+="Mother's last name: "+element.text + '\n';
+          try{
+            for (TextElement element in block.lines[linecount+1].elements) {
+              _elements.add(element);
+              textCapture+="Mother's last name: "+element.text + '\n';
+            }
           }
+          catch(e){
+            textCapture+="Mother's last name: null\n";
+          }          
         }
 
         if (matchEx4.hasMatch(line.text)) {
-          for (TextElement element in block.lines[linecount+1].elements) {
-            _elements.add(element);
-            textCapture+="Name: "+element.text + '\n';
+          try{
+              for (TextElement element in block.lines[linecount+1].elements) {
+                _elements.add(element);
+                textCapture+="Name: "+element.text + '\n';
+              }
           }
+          catch(e){
+            textCapture+="Name: null\n";
+          }
+          
         }
 
         if (matchEx5.hasMatch(line.text)) {
@@ -333,7 +384,6 @@ class _DetailScreenState extends State<DetailScreen> {
       linecount = 0;
     }
     }
-
     
       setState(() {
         recognizedText = textCapture;
@@ -435,7 +485,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => EditTextAU(recognizedText,"Edit Text Screen", resizedPath),
+                                    builder: (context) => EditTextAU(recognizedText,"Edit Text Screen", resizedPath, signPath),
                                   ),
                                 );
                               }   
@@ -443,7 +493,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => EditTextDNI(recognizedText,"Edit Text Screen", resizedPath),
+                                    builder: (context) => EditTextDNI(recognizedText,"Edit Text Screen", resizedPath, signPath),
                                   ),
                                 );
                               }                            
@@ -456,7 +506,7 @@ class _DetailScreenState extends State<DetailScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => Result(recognizedText, resizedPath,"Result Screen"),
+                                  builder: (context) => Result(recognizedText, signPath, resizedPath,"Result Screen"),
                                   ),
                                 );                               
                             },

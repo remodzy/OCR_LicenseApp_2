@@ -5,6 +5,8 @@ import 'package:firebasenewapp/image_detail.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tflite/tflite.dart';
+import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 
 Future<void> main() async {
@@ -74,9 +76,24 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   PickedFile imageURI;
   String imageResizedPath;
+  String signaturePath;
   Image imageNew;
   String optSelected;
-  final ImagePicker _picker = ImagePicker();
+  final ImagePicker _picker = ImagePicker();  
+
+  loadModel() async {
+    Tflite.close();
+    try {
+      String res;
+      res = await Tflite.loadModel(
+        model: "assets/detect.tflite",
+        labels: "assets/labelmap.txt",
+      );      
+      print(res);
+    } on PlatformException {
+      print("Failed to load the model");
+    }
+  }
 
   @override
   void initState() {
@@ -90,12 +107,14 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         optSelected = "No option";
         break;
-    }
+    }    
+    loadModel().then((val) {      
+    });
+    createDirectories();
     super.initState();
   }
 
-  Future <int> getImageFromCameraGallery(bool isCamera) async {
-  
+  createDirectories() async {
     // Formatting Date and Time
     String dateTime = DateFormat.yMMMd()
         .addPattern('-')
@@ -110,11 +129,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final String visionDir = '${appDocDir.path}/Photos/Vision\ Images';
     await Directory(visionDir).create(recursive: true);
 
-    final imageRPath = '$visionDir/imageResized_$formattedDateTime.jpg';
+    imageResizedPath = '$visionDir/imageResized_$formattedDateTime.jpg';
+    signaturePath = '$visionDir/signature_$formattedDateTime.jpg';
+  }
+
+  Future <int> getImageFromCameraGallery(bool isCamera) async {  
+    
     var image = await _picker.getImage(source: (isCamera == true) ? ImageSource.camera : ImageSource.gallery);
     setState(() {      
       imageURI = image;
-      imageResizedPath = imageRPath;
     });
     return 0;
   }  
@@ -141,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => DetailScreen(imageURI.path, imageResizedPath, image,widget.title, widget.select),
+                                builder: (context) => DetailScreen(imageURI.path, imageResizedPath, signaturePath, image,widget.title, widget.select),
                               ),
                             );
                           }
