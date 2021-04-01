@@ -5,22 +5,23 @@ import 'package:firebasenewapp/main.dart';
 import 'dart:async';
 
 class Result extends StatefulWidget{
-  //final String imagePath;
   final String resultText; 
   final String title;
   final String faceImage;
+  final String signImage;
 
-  Result(this.resultText, this.faceImage, this.title);
+  Result(this.resultText, this.faceImage, this.signImage, this.title);
 
   @override
-  _Result createState() => new _Result(resultText, faceImage, title);
+  _Result createState() => new _Result(resultText, signImage, faceImage, title);
 }
 
 class _Result extends State<Result>{
-  _Result(this._text, this._faceImage,this.title);
+  _Result(this._text, this._faceImage, this._signImage, this.title);
 
   final String _text;
   final String _faceImage;
+  final String _signImage;
   final String title;
   
   @override
@@ -41,9 +42,16 @@ class _Result extends State<Result>{
           Container(
                     alignment: Alignment.topCenter,
                     width: double.maxFinite,
-                    color: Colors.black,
                     child: Image.file(
                           File(_faceImage),
+                        ),
+                  ),
+          Container(
+                    alignment: Alignment.topCenter,
+                    width: 180,
+                    padding: EdgeInsets.all(8),
+                    child: _signImage == "null" ? Text('No signature detected!') :Image.file(
+                          File(_signImage),
                         ),
                   ),
           Container(

@@ -16,11 +16,11 @@ const String labelStatus = "Status: ";
 
 
 class EditTextDNI extends StatefulWidget{
-  //final String imagePath;
   final String editable; 
   final String title;
   final String facePath;
-  EditTextDNI(this.editable, this.title, this.facePath);
+  final String signPath;
+  EditTextDNI(this.editable, this.title, this.facePath, this.signPath);
 
   @override
   _EditTextDNI createState() => new _EditTextDNI(editable, title, facePath);
@@ -28,7 +28,6 @@ class EditTextDNI extends StatefulWidget{
 
 class _EditTextDNI extends State<EditTextDNI>{
   _EditTextDNI(this._text, this.title, this._facePath);
-  //final String path;
   final String _text;
   final String title;
   final String _facePath;
@@ -216,7 +215,7 @@ class _EditTextDNI extends State<EditTextDNI>{
               color: Colors.red,
               onPressed: (){
                 _setFullText();
-                Navigator.push(context,MaterialPageRoute(builder: (context) => Result(fullText, _facePath,"Result Screen"),),); 
+                Navigator.push(context,MaterialPageRoute(builder: (context) => Result(fullText, widget.signPath, _facePath,"Result Screen"),),); 
               },
               ),
           ),

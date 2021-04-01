@@ -14,7 +14,8 @@ class EditTextAU extends StatefulWidget{
   final String editable; 
   final String title;
   final String facePath;
-  EditTextAU(this.editable, this.title, this.facePath);
+  final String signPath;
+  EditTextAU(this.editable, this.title, this.facePath, this.signPath);
 
   @override
   _EditTextAU createState() => new _EditTextAU(editable, title, facePath);
@@ -127,7 +128,7 @@ class _EditTextAU extends State<EditTextAU>{
               color: Colors.red,
               onPressed: (){
                 _setFullText();
-                Navigator.push(context,MaterialPageRoute(builder: (context) => Result(fullText, _facePath,"Result Screen"),),); 
+                Navigator.push(context,MaterialPageRoute(builder: (context) => Result(fullText, widget.signPath,_facePath,"Result Screen"),),); 
               },
               ),
           ),

@@ -26,6 +26,7 @@ dependencies:
 
   firebase_core: ^0.5.0
   firebase_ml_vision: ^0.10.0
+  tflite: ^1.1.1
   image_picker: ^0.6.7+14
   image: ^3.0.2
   flutter_cache_manager: ^2.1.2
@@ -54,6 +55,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:    
+    - assets/detect.tflite
+    - assets/labelmap.txt
+    - assets/
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
