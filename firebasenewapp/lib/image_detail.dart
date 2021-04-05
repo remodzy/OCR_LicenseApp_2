@@ -249,11 +249,48 @@ class _DetailScreenState extends State<DetailScreen> {
     matchEx6 = RegExp(match6);
     textCapture = "";
 
+    Rect nameBBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+    Rect birthBBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+    Rect dniBBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+
+    bool isDNIExist = false;
+    bool isNameExist = false;
+    bool isBirthExist = false;
+
+    bool nameFirstFailed = false;
+
     linecount = 0;
     for (TextBlock block in visionText.blocks) {  
       print("Block:");   
       for (TextLine line in block.lines) {
         print(line.text);
+
+        if (matchEx1.hasMatch(line.text)) {
+          for(TextElement element in line.elements){
+            if(element.text.indexOf(matchEx1)!=-1){
+              isDNIExist = true;
+              dniBBox = Rect.fromPoints(Offset(element.boundingBox.topLeft.dx,element.boundingBox.topLeft.dy), Offset(element.boundingBox.bottomRight.dx,element.boundingBox.bottomRight.dy));
+            }
+          } 
+        }
+
+        if (matchEx4.hasMatch(line.text)) {
+          for(TextElement element in line.elements){
+            if(element.text.indexOf(matchEx4)!=-1){
+              isNameExist = true;
+              nameBBox = Rect.fromPoints(Offset(element.boundingBox.topLeft.dx,element.boundingBox.topLeft.dy), Offset(element.boundingBox.bottomRight.dx,element.boundingBox.bottomRight.dy));
+            }
+          }            
+        }
+
+        if (matchEx5.hasMatch(line.text)) {
+          for(TextElement element in line.elements){
+            if(element.text.indexOf(matchEx5)!=-1){
+              isBirthExist = true;
+              birthBBox= Rect.fromPoints(Offset(element.boundingBox.topLeft.dx,element.boundingBox.topLeft.dy), Offset(element.boundingBox.bottomRight.dx,element.boundingBox.bottomRight.dy));
+            }
+          } 
+        }
       }
     }
 
@@ -298,17 +335,24 @@ class _DetailScreenState extends State<DetailScreen> {
           }          
         }
 
-        if (matchEx4.hasMatch(line.text)) {
-          try{
-              for (TextElement element in block.lines[linecount+1].elements) {
+        if (matchEx4.hasMatch(line.text)) {     
+          if (block.lines.asMap().containsKey(linecount+1)) {
+            for (TextElement element in block.lines[linecount+1].elements) {
                 _elements.add(element);
                 textCapture+="Name: "+element.text + '\n';
               }
+          } else {
+            nameFirstFailed = true;
+          }          
+        }
+
+        if(nameFirstFailed && isDNIExist && isBirthExist){
+          for (TextElement element in line.elements) {
+            if(element.boundingBox.topLeft.dy>nameBBox.bottomLeft.dy && element.boundingBox.bottomLeft.dy<birthBBox.topLeft.dy && element.boundingBox.topRight.dx<dniBBox.bottomLeft.dx){
+              _elements.add(element);
+                textCapture+="Name: "+element.text + '\n';
+            }                
           }
-          catch(e){
-            textCapture+="Name: null\n";
-          }
-          
         }
 
         if (matchEx5.hasMatch(line.text)) {
