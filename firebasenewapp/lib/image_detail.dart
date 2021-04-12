@@ -45,7 +45,38 @@ class _DetailScreenState extends State<DetailScreen> {
 
   ssdMobileNet(File image) async {
     final recognitions = await Tflite.detectObjectOnImage( 
-        path: image.path, numResultsPerClass: 1, threshold: 0.2, imageMean: 128, imageStd: 128);
+        path: image.path, numResultsPerClass: 1, threshold: 0.2);
+    setState(() {
+      _recognitions = recognitions;
+      //recognizedText = "";
+      //recognizedText += "Signature confidence: "+recognitions[0]['confidenceInClass'].toString()+"\n";
+    }); 
+    print("TFLITE: "+_recognitions.toString());
+
+    if(_recognitions.length>0){
+      final int x = (_recognitions[0]['rect']['x']*_imageSize.width).toInt();
+      final int y = (_recognitions[0]['rect']['y']*_imageSize.height).toInt();
+      final int w = (_recognitions[0]['rect']['w']*_imageSize.width).toInt();
+      final int h = (_recognitions[0]['rect']['h']*_imageSize.height).toInt();
+
+    img.Image signImage = copyCrop(imgImage,x,y,w,h);
+    
+    File(signPath).writeAsBytesSync(img.encodePng(signImage));
+    }
+    else signPath="null";
+  }
+
+  tinyYolov2(File image) async {
+    final recognitions = await Tflite.detectObjectOnImage( 
+        path: image.path, 
+        model: "YOLO",      
+        imageMean: 0.0,       
+        imageStd: 255.0,      
+        threshold: 0.2,       // defaults to 0.1
+        numResultsPerClass: 2,// defaults to 5
+        blockSize: 32,        // defaults to 32
+        numBoxesPerBlock: 5,  // defaults to 5
+        asynch: true  );
     setState(() {
       _recognitions = recognitions;
       //recognizedText = "";
@@ -129,7 +160,8 @@ class _DetailScreenState extends State<DetailScreen> {
       await _getImageSize(imageFile);
     }
 
-    ssdMobileNet(imageFile);
+    //ssdMobileNet(imageFile);
+    tinyYolov2(imageFile);
     _faceDetection();
 
     FirebaseVisionImage visionImage =
