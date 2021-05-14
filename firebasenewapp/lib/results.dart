@@ -36,40 +36,42 @@ class _Result extends State<Result>{
       appBar: AppBar(
         title: Text(title),
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Container(
-                    alignment: Alignment.topCenter,
-                    width: double.maxFinite,
-                    child: Image.file(
-                          File(_faceImage),
-                        ),
-                  ),
-          Container(
-                    alignment: Alignment.topCenter,
-                    width: 180,
-                    padding: EdgeInsets.all(8),
-                    child: _signImage == "null" ? Text('No signature detected!') :Image.file(
-                          File(_signImage),
-                        ),
-                  ),
-          Container(
-            child: Text(_text),
-            padding: EdgeInsets.all(32),
-          ),
-          Container(
-            width: double.infinity,
-            child: FlatButton(
-              child: Text("Make another detection"),
-              color: Colors.red,
-              onPressed: (){
-                Navigator.push(context,MaterialPageRoute(builder: (context) => MyApp(),),); 
-              },
-              ),
-          ),          
-        ],
-      ),
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Container(
+                      alignment: Alignment.topCenter,
+                      width: double.maxFinite,
+                      child: Image.file(
+                            File(_faceImage),
+                          ),
+                    ),
+            Container(
+                      alignment: Alignment.topCenter,
+                      width: 180,
+                      padding: EdgeInsets.all(8),
+                      child: _signImage == "null" ? Text('No signature detected!') :Image.file(
+                            File(_signImage),
+                          ),
+                    ),
+            Container(
+              child: Text(_text),
+              padding: EdgeInsets.all(32),
+            ),
+            Container(
+              width: double.infinity,
+              child: FlatButton(
+                child: Text("Make another detection"),
+                color: Colors.red,
+                onPressed: (){
+                  Navigator.push(context,MaterialPageRoute(builder: (context) => MyApp(),),); 
+                },
+                ),
+            ),          
+          ],
+        ),
+      )
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:firebasenewapp/edit_text_AU.dart';
 import 'package:firebasenewapp/edit_text_DNI.dart';
 import 'package:image/image.dart' as img;
+import 'package:flutter_exif_rotation/flutter_exif_rotation.dart';
 import 'package:firebasenewapp/results.dart';
 import 'package:tflite/tflite.dart';
 import 'dart:io';
@@ -40,6 +41,7 @@ class _DetailScreenState extends State<DetailScreen> {
   List<TextElement> _elements = [];
   String recognizedText = "Loading...";  
   Rect boundingBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+  Rect signBoundingBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
   
   List _recognitions;
 
@@ -67,16 +69,33 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   tinyYolov2(File image) async {
-    final recognitions = await Tflite.detectObjectOnImage( 
-        path: image.path, 
+    var recognitions;
+    if (_imageSize.height>_imageSize.width){
+      File rotatedImage = await FlutterExifRotation.rotateImage(path: image.path);
+
+      recognitions = await Tflite.detectObjectOnImage( 
+        path: rotatedImage.path, 
         model: "YOLO",      
         imageMean: 0.0,       
         imageStd: 255.0,      
-        threshold: 0.2,       // defaults to 0.1
+        threshold: 0.1,       // defaults to 0.1
         numResultsPerClass: 2,// defaults to 5
         blockSize: 32,        // defaults to 32
         numBoxesPerBlock: 5,  // defaults to 5
         asynch: true  );
+    }
+    else{
+      recognitions = await Tflite.detectObjectOnImage( 
+        path: image.path, 
+        model: "YOLO",      
+        imageMean: 0.0,       
+        imageStd: 255.0,      
+        threshold: 0.1,       // defaults to 0.1
+        numResultsPerClass: 2,// defaults to 5
+        blockSize: 32,        // defaults to 32
+        numBoxesPerBlock: 5,  // defaults to 5
+        asynch: true  );
+    }
     setState(() {
       _recognitions = recognitions;
       //recognizedText = "";
@@ -89,10 +108,19 @@ class _DetailScreenState extends State<DetailScreen> {
       final int y = (_recognitions[0]['rect']['y']*_imageSize.height).toInt();
       final int w = (_recognitions[0]['rect']['w']*_imageSize.width).toInt();
       final int h = (_recognitions[0]['rect']['h']*_imageSize.height).toInt();
-
-    img.Image signImage = copyCrop(imgImage,x,y,w,h);
     
-    File(signPath).writeAsBytesSync(img.encodePng(signImage));
+    if (_imageSize.height>_imageSize.width){
+      img.Image signImage = copyCrop(imgImage,y,_imageSize.width.toInt()-w-x,h,w);
+    
+      await File(signPath).writeAsBytesSync(img.encodePng(signImage));
+    } else{
+      img.Image signImage = copyCrop(imgImage,x,y,w,h);
+    
+      await File(signPath).writeAsBytesSync(img.encodePng(signImage));
+    }    
+    
+    signBoundingBox = Rect.fromPoints(Offset(x.toDouble(),y.toDouble()), Offset((x+w).toDouble(),(y+h).toDouble()));
+
     }
     else signPath="null";
   }
@@ -151,7 +179,6 @@ class _DetailScreenState extends State<DetailScreen> {
     print("Face Detection took ${endTime - startTime}");
   }
 
-
   void _initializeVision() async {
     int startTime = new DateTime.now().millisecondsSinceEpoch;
     final File imageFile = File(path);
@@ -162,6 +189,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
     //ssdMobileNet(imageFile);
     tinyYolov2(imageFile);
+    
     _faceDetection();
 
     FirebaseVisionImage visionImage =
@@ -184,7 +212,7 @@ class _DetailScreenState extends State<DetailScreen> {
     if(select == 0){
       pattern1 = r"\d{3} \d{3} \d{3}";
       pattern2 = r"[A-Z]";   
-      match1 = r"(?:o|D|O|0)river";
+      match1 = r"(?:o|D|O|0|)river";
       match2 = r"(?:o|D|O|0)(?:o|D|O|0)(?:B|6|8|e|E)";
       match3 = r"DOB";
       
@@ -510,7 +538,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     color: Colors.black,
                     child: CustomPaint(
                       foregroundPainter:
-                          TextDetectorPainter(_imageSize, _elements, boundingBox),
+                          TextDetectorPainter(_imageSize, _elements, boundingBox, signBoundingBox),
                       child: AspectRatio(
                         aspectRatio: _imageSize.aspectRatio,
                         child: Image.file(
@@ -607,11 +635,12 @@ class _DetailScreenState extends State<DetailScreen> {
 }
 
 class TextDetectorPainter extends CustomPainter {
-  TextDetectorPainter(this.absoluteImageSize, this.elements, this.boundingBox);
+  TextDetectorPainter(this.absoluteImageSize, this.elements, this.boundingBox, this.signBoundingBox);
 
   final Size absoluteImageSize;
   final List<TextElement> elements;
   final Rect boundingBox;
+  final Rect signBoundingBox;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -636,6 +665,15 @@ class TextDetectorPainter extends CustomPainter {
       );
     }
 
+    Rect signRect(Rect bounding) {
+      return Rect.fromLTRB(
+        bounding.left*scaleX,
+        bounding.top*scaleY,
+        bounding.right*scaleX,
+        bounding.bottom*scaleY,
+      );
+    }
+
     final Paint paint = Paint()
       ..style = PaintingStyle.stroke
       ..color = Colors.red
@@ -645,6 +683,7 @@ class TextDetectorPainter extends CustomPainter {
       canvas.drawRect(scaleRect(element), paint);
     }
     canvas.drawRect(faceRect(boundingBox), paint);
+    canvas.drawRect(signRect(signBoundingBox), paint);
   }
 
   @override
