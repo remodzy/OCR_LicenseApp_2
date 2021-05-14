@@ -45,7 +45,38 @@ class _DetailScreenState extends State<DetailScreen> {
 
   ssdMobileNet(File image) async {
     final recognitions = await Tflite.detectObjectOnImage( 
-        path: image.path, numResultsPerClass: 1, threshold: 0.2, imageMean: 128, imageStd: 128);
+        path: image.path, numResultsPerClass: 1, threshold: 0.2);
+    setState(() {
+      _recognitions = recognitions;
+      //recognizedText = "";
+      //recognizedText += "Signature confidence: "+recognitions[0]['confidenceInClass'].toString()+"\n";
+    }); 
+    print("TFLITE: "+_recognitions.toString());
+
+    if(_recognitions.length>0){
+      final int x = (_recognitions[0]['rect']['x']*_imageSize.width).toInt();
+      final int y = (_recognitions[0]['rect']['y']*_imageSize.height).toInt();
+      final int w = (_recognitions[0]['rect']['w']*_imageSize.width).toInt();
+      final int h = (_recognitions[0]['rect']['h']*_imageSize.height).toInt();
+
+    img.Image signImage = copyCrop(imgImage,x,y,w,h);
+    
+    File(signPath).writeAsBytesSync(img.encodePng(signImage));
+    }
+    else signPath="null";
+  }
+
+  tinyYolov2(File image) async {
+    final recognitions = await Tflite.detectObjectOnImage( 
+        path: image.path, 
+        model: "YOLO",      
+        imageMean: 0.0,       
+        imageStd: 255.0,      
+        threshold: 0.2,       // defaults to 0.1
+        numResultsPerClass: 2,// defaults to 5
+        blockSize: 32,        // defaults to 32
+        numBoxesPerBlock: 5,  // defaults to 5
+        asynch: true  );
     setState(() {
       _recognitions = recognitions;
       //recognizedText = "";
@@ -129,7 +160,8 @@ class _DetailScreenState extends State<DetailScreen> {
       await _getImageSize(imageFile);
     }
 
-    ssdMobileNet(imageFile);
+    //ssdMobileNet(imageFile);
+    tinyYolov2(imageFile);
     _faceDetection();
 
     FirebaseVisionImage visionImage =
@@ -249,11 +281,48 @@ class _DetailScreenState extends State<DetailScreen> {
     matchEx6 = RegExp(match6);
     textCapture = "";
 
+    Rect nameBBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+    Rect birthBBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+    Rect dniBBox = Rect.fromPoints(Offset(0,0), Offset(0,0));
+
+    bool isDNIExist = false;
+    bool isNameExist = false;
+    bool isBirthExist = false;
+
+    bool nameFirstFailed = false;
+
     linecount = 0;
     for (TextBlock block in visionText.blocks) {  
       print("Block:");   
       for (TextLine line in block.lines) {
         print(line.text);
+
+        if (matchEx1.hasMatch(line.text)) {
+          for(TextElement element in line.elements){
+            if(element.text.indexOf(matchEx1)!=-1){
+              isDNIExist = true;
+              dniBBox = Rect.fromPoints(Offset(element.boundingBox.topLeft.dx,element.boundingBox.topLeft.dy), Offset(element.boundingBox.bottomRight.dx,element.boundingBox.bottomRight.dy));
+            }
+          } 
+        }
+
+        if (matchEx4.hasMatch(line.text)) {
+          for(TextElement element in line.elements){
+            if(element.text.indexOf(matchEx4)!=-1){
+              isNameExist = true;
+              nameBBox = Rect.fromPoints(Offset(element.boundingBox.topLeft.dx,element.boundingBox.topLeft.dy), Offset(element.boundingBox.bottomRight.dx,element.boundingBox.bottomRight.dy));
+            }
+          }            
+        }
+
+        if (matchEx5.hasMatch(line.text)) {
+          for(TextElement element in line.elements){
+            if(element.text.indexOf(matchEx5)!=-1){
+              isBirthExist = true;
+              birthBBox= Rect.fromPoints(Offset(element.boundingBox.topLeft.dx,element.boundingBox.topLeft.dy), Offset(element.boundingBox.bottomRight.dx,element.boundingBox.bottomRight.dy));
+            }
+          } 
+        }
       }
     }
 
@@ -298,17 +367,24 @@ class _DetailScreenState extends State<DetailScreen> {
           }          
         }
 
-        if (matchEx4.hasMatch(line.text)) {
-          try{
-              for (TextElement element in block.lines[linecount+1].elements) {
+        if (matchEx4.hasMatch(line.text)) {     
+          if (block.lines.asMap().containsKey(linecount+1)) {
+            for (TextElement element in block.lines[linecount+1].elements) {
                 _elements.add(element);
                 textCapture+="Name: "+element.text + '\n';
               }
+          } else {
+            nameFirstFailed = true;
+          }          
+        }
+
+        if(nameFirstFailed && isDNIExist && isBirthExist){
+          for (TextElement element in line.elements) {
+            if(element.boundingBox.topLeft.dy>nameBBox.bottomLeft.dy && element.boundingBox.bottomLeft.dy<birthBBox.topLeft.dy && element.boundingBox.topRight.dx<dniBBox.bottomLeft.dx){
+              _elements.add(element);
+                textCapture+="Name: "+element.text + '\n';
+            }                
           }
-          catch(e){
-            textCapture+="Name: null\n";
-          }
-          
         }
 
         if (matchEx5.hasMatch(line.text)) {
